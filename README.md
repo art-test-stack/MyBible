@@ -8,6 +8,7 @@ Topic | Title                          | Author(s)         | Journal          | 
 EB Models | A tutorial on Energy-Based Learning | LeCun et al. | MIT Press | 2006 | [unknown](https://www.researchgate.net/publication/200744586_A_tutorial_on_energy-based_learning) |
 | | Your Classifier is Secretly an Energy Based Model and You Should Treat it Like One | Grathwohl et al. | arXiv | 2019 | [1912.03263](https://arxiv.org/abs/1912.03263) |
 | | How to Train Your Energy-Based Models | Song et al. | arXiv | 2021 | [2101.03288](https://arxiv.org/abs/2101.03288) |
+| | Energy-Based Transformers are Scalable Learners and Thinkers | Gladstone et al. | arXiv | 2025 | [2507.02092](https://arxiv.org/abs/2507.02092) |
 LLM   | Attention is all you need      | Vaswani et al.    | arXiv  | 2017 | [1706.03762](https://arxiv.org/abs/1706.03762) |
 |    | Efficient Transformers: A Survey  | Tay et al. |arXiv | 2020 | [2009.06732](https://arxiv.org/abs/2009.06732) |
 Diffusion | Denoising Diffusion Probabilistic Models | Ho et al. | NeurIPS | 2020 | [2006.11239](https://arxiv.org/abs/2006.11239) |
