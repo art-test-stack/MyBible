@@ -1,11 +1,11 @@
 """Tests for storage module."""
 
-import pytest
-import pandas as pd
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-import sys
+
+import pandas as pd
+import pytest
 
 from pkg.mybib import storage
 
@@ -13,7 +13,7 @@ from pkg.mybib import storage
 @pytest.fixture
 def temp_csv():
     """Create a temporary CSV file for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         temp_path = f.name
     # Delete the empty file so it can be created fresh
     Path(temp_path).unlink(missing_ok=True)
@@ -32,7 +32,7 @@ def sample_references():
         "year": 2023,
         "doi": "10.1234/example.2023",
         "link": "https://example.com/paper1",
-        "category": "Machine Learning"
+        "category": "Machine Learning",
     }
 
 
@@ -49,7 +49,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         df = pd.read_csv(temp_csv)
@@ -68,7 +68,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         # Add second reference
@@ -80,7 +80,7 @@ class TestAddReference:
             doi="10.5678/example.2024",
             link="https://example.com/paper2",
             category="Deep Learning",
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         df = pd.read_csv(temp_csv)
@@ -98,7 +98,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         storage.add_reference(
@@ -109,12 +109,20 @@ class TestAddReference:
             doi="10.9999/another.2022",
             link="https://example.com/paper3",
             category="Research",
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         df = pd.read_csv(temp_csv)
         # Check headers are correct
-        expected_headers = ["Title", "Authors", "Journal", "Year", "DOI", "Link", "Category"]
+        expected_headers = [
+            "Title",
+            "Authors",
+            "Journal",
+            "Year",
+            "DOI",
+            "Link",
+            "Category",
+        ]
         assert list(df.columns) == expected_headers
 
 
@@ -131,11 +139,11 @@ class TestDuplicateDetection:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         # Try to add duplicate with different title
-        with patch('sys.exit') as mock_exit:
+        with patch("sys.exit") as mock_exit:
             storage.add_reference(
                 title="Different Title",
                 authors="Different Authors",
@@ -144,7 +152,7 @@ class TestDuplicateDetection:
                 doi=sample_references["doi"],  # Same DOI
                 link="https://different.com",
                 category="Different Category",
-                file_path=temp_csv
+                file_path=temp_csv,
             )
             mock_exit.assert_called_once_with(0)
 
@@ -158,11 +166,11 @@ class TestDuplicateDetection:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         # Try to add duplicate with different case DOI
-        with patch('sys.exit') as mock_exit:
+        with patch("sys.exit") as mock_exit:
             storage.add_reference(
                 title="Another Title",
                 authors="Another Author",
@@ -171,7 +179,7 @@ class TestDuplicateDetection:
                 doi=sample_references["doi"].upper(),  # Different case
                 link="https://another.com",
                 category="Another Category",
-                file_path=temp_csv
+                file_path=temp_csv,
             )
             mock_exit.assert_called_once_with(0)
 
@@ -185,11 +193,11 @@ class TestDuplicateDetection:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         # Try to add duplicate with extra whitespace
-        with patch('sys.exit') as mock_exit:
+        with patch("sys.exit") as mock_exit:
             storage.add_reference(
                 title="Yet Another Title",
                 authors="Yet Another Author",
@@ -198,7 +206,7 @@ class TestDuplicateDetection:
                 doi=f"  {sample_references['doi']}  ",  # Whitespace added
                 link="https://yet-another.com",
                 category="Yet Another Category",
-                file_path=temp_csv
+                file_path=temp_csv,
             )
             mock_exit.assert_called_once_with(0)
 
@@ -212,7 +220,7 @@ class TestDuplicateDetection:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         # Add reference with different DOI
@@ -224,7 +232,7 @@ class TestDuplicateDetection:
             doi="10.1111/different.2024",  # Different DOI
             link="https://another.com",
             category="Different Category",
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         df = pd.read_csv(temp_csv)
@@ -244,7 +252,7 @@ class TestLoadReferences:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
-            file_path=temp_csv
+            file_path=temp_csv,
         )
 
         df = storage.load_references(temp_csv)
@@ -257,9 +265,17 @@ class TestLoadReferences:
         Path(temp_csv).unlink(missing_ok=True)
 
         df = storage.load_references(temp_csv)
-        
+
         assert df.empty
-        assert list(df.columns) == ["Title", "Authors", "Journal", "Year", "DOI", "Link", "Category"]
+        assert list(df.columns) == [
+            "Title",
+            "Authors",
+            "Journal",
+            "Year",
+            "DOI",
+            "Link",
+            "Category",
+        ]
         assert Path(temp_csv).exists()
 
     def test_load_references_preserves_data(self, temp_csv, sample_references):
@@ -271,10 +287,10 @@ class TestLoadReferences:
                 authors=f"Author {i}",
                 journal=f"Journal {i}",
                 year=2020 + i,
-                doi=f"10.{i}/example.{2020+i}",
+                doi=f"10.{i}/example.{2020 + i}",
                 link=f"https://example.com/paper{i}",
                 category=f"Category {i}",
-                file_path=temp_csv
+                file_path=temp_csv,
             )
 
         df = storage.load_references(temp_csv)

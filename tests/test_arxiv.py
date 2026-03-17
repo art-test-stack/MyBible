@@ -1,8 +1,8 @@
 """Tests for arXiv metadata fetching module."""
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
-import sys
 
 from pkg.mybib import arxiv
 
@@ -70,12 +70,12 @@ def sample_arxiv_response_no_journal():
 class TestFetchArxivMetadata:
     """Test fetching metadata from arXiv API."""
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_success(self, mock_get, sample_arxiv_response):
         """Test successfully fetching arXiv metadata."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = sample_arxiv_response.encode('utf-8')
+        mock_response.content = sample_arxiv_response.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("1706.03762")
@@ -89,12 +89,14 @@ class TestFetchArxivMetadata:
         assert result["journal"] == "NIPS 2017"
         assert result["link"] == "https://arxiv.org/abs/1706.03762"
 
-    @patch('pkg.mybib.arxiv.requests.get')
-    def test_fetch_arxiv_metadata_multiple_authors(self, mock_get, sample_arxiv_response):
+    @patch("pkg.mybib.arxiv.requests.get")
+    def test_fetch_arxiv_metadata_multiple_authors(
+        self, mock_get, sample_arxiv_response
+    ):
         """Test that multiple authors are properly parsed."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = sample_arxiv_response.encode('utf-8')
+        mock_response.content = sample_arxiv_response.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("1706.03762")
@@ -105,12 +107,12 @@ class TestFetchArxivMetadata:
         assert "Noam Shazeer" in authors
         assert "Parmar Aidan" in authors
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_no_doi(self, mock_get, sample_arxiv_response_no_doi):
         """Test handling of metadata without DOI (uses arxiv_id as fallback)."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = sample_arxiv_response_no_doi.encode('utf-8')
+        mock_response.content = sample_arxiv_response_no_doi.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("2003.06123")
@@ -120,12 +122,14 @@ class TestFetchArxivMetadata:
         assert result["doi"] == "2003.06123"  # Falls back to arxiv_id
         assert result["journal"] == "arXiv"
 
-    @patch('pkg.mybib.arxiv.requests.get')
-    def test_fetch_arxiv_metadata_no_journal(self, mock_get, sample_arxiv_response_no_journal):
+    @patch("pkg.mybib.arxiv.requests.get")
+    def test_fetch_arxiv_metadata_no_journal(
+        self, mock_get, sample_arxiv_response_no_journal
+    ):
         """Test handling of metadata without journal reference."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = sample_arxiv_response_no_journal.encode('utf-8')
+        mock_response.content = sample_arxiv_response_no_journal.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("2201.04000")
@@ -134,8 +138,8 @@ class TestFetchArxivMetadata:
         assert result["journal"] == "arXiv"  # Default journal
         assert result["year"] == 2022
 
-    @patch('pkg.mybib.arxiv.sys.exit', side_effect=SystemExit)
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.sys.exit", side_effect=SystemExit)
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_http_error(self, mock_get, mock_exit):
         """Test handling of HTTP errors."""
         mock_response = Mock()
@@ -145,8 +149,8 @@ class TestFetchArxivMetadata:
         with pytest.raises(SystemExit):
             arxiv.fetch_arxiv_metadata("1706.03762")
 
-    @patch('pkg.mybib.arxiv.sys.exit', side_effect=SystemExit)
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.sys.exit", side_effect=SystemExit)
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_not_found(self, mock_get, mock_exit):
         """Test handling when no entry is found."""
         empty_response = """<?xml version="1.0" encoding="UTF-8"?>
@@ -154,18 +158,18 @@ class TestFetchArxivMetadata:
 </feed>"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = empty_response.encode('utf-8')
+        mock_response.content = empty_response.encode("utf-8")
         mock_get.return_value = mock_response
 
         with pytest.raises(SystemExit):
             arxiv.fetch_arxiv_metadata("9999.99999")
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_url_formation(self, mock_get, sample_arxiv_response):
         """Test that the correct URL is being formed."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = sample_arxiv_response.encode('utf-8')
+        mock_response.content = sample_arxiv_response.encode("utf-8")
         mock_get.return_value = mock_response
 
         arxiv.fetch_arxiv_metadata("1706.03762")
@@ -176,7 +180,7 @@ class TestFetchArxivMetadata:
         assert "export.arxiv.org/api/query" in called_url
         assert "1706.03762" in called_url
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_whitespace_in_title(self, mock_get):
         """Test that whitespace in title is normalized."""
         response_with_newline = """<?xml version="1.0" encoding="UTF-8"?>
@@ -196,7 +200,7 @@ class TestFetchArxivMetadata:
 </feed>"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = response_with_newline.encode('utf-8')
+        mock_response.content = response_with_newline.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("1706.03762")
@@ -206,7 +210,7 @@ class TestFetchArxivMetadata:
         assert "Attention Is All" in result["title"]
         assert "You Need" in result["title"]
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_single_author(self, mock_get):
         """Test handling of single author."""
         single_author_response = """<?xml version="1.0" encoding="UTF-8"?>
@@ -224,14 +228,14 @@ class TestFetchArxivMetadata:
 </feed>"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.content = single_author_response.encode('utf-8')
+        mock_response.content = single_author_response.encode("utf-8")
         mock_get.return_value = mock_response
 
         result = arxiv.fetch_arxiv_metadata("2105.00001")
 
         assert result["authors"] == "Alice Author"
 
-    @patch('pkg.mybib.arxiv.requests.get')
+    @patch("pkg.mybib.arxiv.requests.get")
     def test_fetch_arxiv_metadata_connection_error(self, mock_get):
         """Test handling of connection errors."""
         mock_get.side_effect = Exception("Connection error")

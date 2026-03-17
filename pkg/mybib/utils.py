@@ -3,20 +3,20 @@
 
 def reform_names(authors_str: str) -> str:
     """Format author names for display.
-    
+
     Converts full author lists to abbreviated form:
     - Single author: Last name only
     - Two authors: "LastName1 and LastName2"
     - Three+ authors: "LastName et al."
-    
+
     Args:
         authors_str: Comma-separated string of author names
-        
+
     Returns:
         Formatted author string
     """
     authors = authors_str.split(", ")
-    
+
     if len(authors) > 2:
         first_author_last_name = authors[0].split()[-1]
         return f"{first_author_last_name} et al."
