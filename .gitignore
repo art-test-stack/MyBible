@@ -1,0 +1,6 @@
+.venv
+*.csv
+__pycache__/
+uv.lock
+*egg-info
+table.md

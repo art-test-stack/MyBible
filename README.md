@@ -1,12 +1,47 @@
 # MyBible
 
-This repository contains a non-exhaustive curated list of important research papers in the fields of Large Language Models (LLMs), Time-Series Transformers, Diffusion Models, Energy-Based Models (EB-Models), and Tsetlin Machines. The goal is to provide a comprehensive resource for researchers and practitioners interested in these areas.
+This repository contains a non-exhaustive curated list of important research papers in different fields, mostly from AI-research, that I have studied. 
+
+The goal is to provide myself a comprehensive resource for quickly recalling important papers and their key contributions, as well as to share this resource with others who might find it useful.
+
+I plan to keep this repository updated with new papers that I find interesting and relevant, and to organize them in a way that makes it easy to navigate and find specific topics.
+
+The code in this repository allows me to easily add new papers, generate markdown tables for better visualization, and maintain the list in a structured format. It can be used as a template for anyone who wants to create their own curated list of research papers, or anyone who wants to extend the list of papers.
+
+I will probably add the following featuresin the future:
+- summaries, 
+- key insights, 
+- personal notes for each paper in the future, 
+- a way to track which papers I have read and which ones I still need to read,
+- graphical visualizations of the relationships between papers (e.g., citation networks, topic clusters).
+
+## Usage
+
+- The papers are organized into categories based on their topics.
+- Each entry includes the title, author(s), journal, year of publication, and a DOI link for easy access.
+
+### 
+
+### How to Add a Paper
+
+- If the paper is from arxiv, run the following command, replacing `<arxiv_url>` with the actual arXiv url of the paper:
+```bash
+uv sync && uv run main.py add-arxiv <arxiv_url> --category <category_name>
+```
+- If the paper is not from arxiv, run the following command, replacing the placeholders with the actual information:
+```bash
+uv sync && uv run main.py add --title "<paper_title>" --authors "<author1>, <author2>, ..." --journal "<journal_name>" --year <publication_year> --doi "<doi_link>" --category <category_name>
+```
+
+
 
 ## LLMs Basics
+
 
 | Title |  Author(s) | Journal | Year | DOI  |  
 |-------|------------|---------|------|------|
 | Attention is all you need      | Vaswani et al.    | arXiv  | 2017 | [1706.03762] |
+| Shampoo: Preconditioned Stochastic Tensor Optimization | Gupta et al. | arXiv | 2018 | [1802.09568] |
 | BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | Devlin et al. | arXiv | 2018 | [1810.04805] |
 | Language models are unsupervised multitask learners | Radford et al. | OpenAI | 2019 | [unsupervised-multitask] |
 | Language Models are Few-Shot Learners | Brown et al. | arXiv | 2020 | [2005.14165] |
@@ -43,16 +78,17 @@ This repository contains a non-exhaustive curated list of important research pap
 | Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting | Lim et al. | arXiv | 2020 | [1912.09363] |
 | N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting | Challu et al. | arXiv | 2022 | [2201.12886] |
 
-## Diffusion Models
+## Diffusion
 
 
 | Title |  Author(s) | Journal | Year | DOI  |  
 |-------|------------|---------|------|------|
 | Denoising Diffusion Probabilistic Models | Ho et al. | NeurIPS | 2020 | [2006.11239] |
 | Generative Diffusion Models on Graphs: Methods and Applications | Liu et al. | arXiv | 2023 | [2302.02591] |
+| dLLM: Simple Diffusion Language Modeling | Zhou et al. | arXiv | 2026 | [2602.22661] |
 
 
-## EB-Models Articles
+## EB-Models
 
 | Title |  Author(s) | Journal | Year | DOI  |  
 |-------|------------|---------|------|------|
@@ -61,6 +97,8 @@ This repository contains a non-exhaustive curated list of important research pap
 | How to Train Your Energy-Based Models | Song et al. | arXiv | 2021 | [2101.03288] |
 | HELMET: How to Evaluate Long-Context Language Models Effectively and Thoroughly | Yen et al. | arXiv | 2024 | [2410.02694] |
 | Energy-Based Transformers are Scalable Learners and Thinkers | Gladstone et al. | arXiv | 2025 | [2507.02092] |
+
+## Alignment 
 
 
 ## Tsetlin Machines Articles
@@ -74,6 +112,7 @@ This repository contains a non-exhaustive curated list of important research pap
 [10.1109/ISTM54910.2022.00016]: https://ieeexplore.ieee.org/document/9923796
 [1606.05250]: https://arxiv.org/abs/1606.05250
 [1706.03762]: https://arxiv.org/abs/1706.03762
+[1802.09568]: https://arxiv.org/abs/1802.09568
 [1804.01508]: https://arxiv.org/abs/1804.01508
 [1810.04805]: https://arxiv.org/abs/1810.04805
 [1912.03263]: https://arxiv.org/abs/1912.03263
@@ -107,6 +146,7 @@ This repository contains a non-exhaustive curated list of important research pap
 [2502.16982]: https://arxiv.org/abs/2502.16982
 [2507.02092]: https://arxiv.org/abs/2507.02092
 [2507.20534]: https://arxiv.org/abs/2507.20534
+[2602.22661]: https://arxiv.org/abs/2602.22661
 [unsupervised-multitask]: https://storage.prod.researchhub.com/uploads/papers/2020/06/01/language-models.pdf
 [eb-learning]: [unknown](https://www.researchgate.net/publication/200744586_A_tutorial_on_energy-based_learning)
 
