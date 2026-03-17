@@ -11,13 +11,9 @@ from pkg.mybib import storage, markdown
 @pytest.fixture
 def temp_csv():
     """Create a temporary CSV file for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-        temp_path = f.name
-    # Delete the empty file so it can be created fresh
-    Path(temp_path).unlink(missing_ok=True)
-    yield temp_path
-    # Cleanup
-    Path(temp_path).unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir) / "test_references.csv"
+        yield str(temp_path)
 
 
 @pytest.fixture

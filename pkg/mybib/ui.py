@@ -70,12 +70,12 @@ def api_progress() -> Generator:
             progress.stop()
 
 
-def confirm_action(prompt: str, default: bool = False) -> bool:
+def confirm_action(prompt: str, default: bool = True) -> bool:
     """Show a confirmation prompt with rich styling.
     
     Args:
         prompt: The question to ask
-        default: Default response if user just presses enter
+        default: Default response if user just presses enter (default: True)
         
     Returns:
         True if confirmed, False otherwise

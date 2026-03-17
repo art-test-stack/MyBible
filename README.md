@@ -21,7 +21,7 @@ The papers are organized into categories based on their topics, with each entry 
 
 ```bash
 # Clone and set up the environment
-git clone <repository-url>
+git clone git@github.com:art-test-stack/MyBible.git
 cd MyBible
 uv sync
 ```
@@ -30,17 +30,22 @@ uv sync
 
 #### From arXiv
 ```bash
-uv run mybib add-arxiv <arxiv_url> --category <category_name>
+mybib add-arxiv <arxiv_url> --category <category_name>
 ```
 
 Example:
 ```bash
-uv run mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "LLMs Basics"
+mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "LLMs Basics"
+```
+
+#### Automated Google Scholar Search
+```bash
+mybib add --title "Attention is all you need" --category "LLMs Basics"
 ```
 
 #### Manual Entry
 ```bash
-uv run mybib add --title "<title>" --authors "<author1>, <author2>, ..." \
+mybib add --title "<title>" --authors "<author1>, <author2>, ..." \
   --journal "<journal>" --year <year> --doi "<doi>" --category <category>
 ```
 
@@ -48,17 +53,17 @@ uv run mybib add --title "<title>" --authors "<author1>, <author2>, ..." \
 
 #### Markdown Tables
 ```bash
-uv run mybib markdown --file references.csv --output references.md
+mybib markdown --file references.csv --output references.md
 ```
 
 #### BibTeX Export
 ```bash
-uv run mybib bibtex --file references.csv --output references.bib
+mybib bibtex --file references.csv --output references.bib
 ```
 
 #### Citation Network Graph
 ```bash
-uv run mybib graph --file references.csv --output citation_graph.html
+mybib graph --file references.csv --output citation_graph.html
 ```
 
 ## Features
@@ -129,38 +134,65 @@ Built-in duplicate detection when adding new papers:
 - Whitespace normalization
 - Prevents accidental duplicates in your bibliography
 
-### 🧪 Comprehensive Test Suite
+## 🎯 Recent Improvements (v2.0)
 
-The project includes extensive pytest tests covering:
+### ✨ Enhanced Data Quality
 
-**Storage Module** (`test_storage.py`):
-- Adding references to CSV files
-- Duplicate detection with various formats
-- Loading and preserving reference data
+**Authors Formatting**
+- Proper "FirstAuthor et al." format instead of just "al."
+- Team name detection and display (K2 Team, DeepSeek-Ai, Mistral, etc.)
+- Intelligently handles both individual and organizational authors
 
-**ArXiv Module** (`test_arxiv.py`):
-- Metadata fetching from arXiv API
-- Multiple author parsing
-- Error handling and fallbacks
-- URL formation and validation
+**ArxivID Precision**
+- Fixed float rounding errors (2405.10938 now displays correctly, not 2405.11)
+- ArxivID stored as string to preserve full precision
 
-**Markdown Module** (`test_markdown.py`):
-- Table generation with various formats
-- Category-based organization
-- Author name reformatting
-- Sorting and filtering
+**Scholar Metadata Extraction**
+- Improved year extraction for Google Scholar articles (full 4-digit years)
+- Better DOI extraction with intelligent fallback to Scholar IDs
+- Enhanced regex patterns for robust metadata parsing
 
-**Running Tests:**
+### 🏷️ Category Management System
+
+- **ID-based categories**: Each category assigned a unique ID with persistent mappings
+- **Case-insensitive normalization**: "LLM Basics" and "llm basics" treated as same category
+- **Interactive selection**: Choose categories by ID or create new ones on-the-fly
+- **Category persistence**: All mappings stored in `categories.json`
+
 ```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Run specific test module
-python -m pytest tests/test_storage.py -v
-
-# Run with coverage
-python -m pytest tests/ --cov=pkg/mybib
+# Interactive category selection during add
+mybib add-arxiv https://arxiv.org/abs/2301.00001
+# Shows: Available categories: 1: alignment, 2: deep learning, 3: LLMs Basics
 ```
+
+### 🗄️ Database Foundation (SQLAlchemy ORM)
+
+Scalable SQL database support for advanced features:
+
+**New Commands:**
+```bash
+# Initialize database
+mybib db-init --db-url sqlite:///bibliography.db
+
+# Migrate existing CSV to database
+mybib db-migrate --file references.csv --db-url sqlite:///bibliography.db
+
+# Export database back to CSV
+mybib db-export --output backup.csv --db-url sqlite:///bibliography.db
+```
+
+**Features:**
+- SQLite default, supports any SQLAlchemy-compatible database (PostgreSQL, MySQL, etc.)
+- Full referential integrity with foreign keys
+- Indexed queries for common search patterns
+- Non-destructive migration (export back to CSV anytime)
+- Duplicate detection based on DOI
+
+**Benefits:**
+- Foundation for advanced search and filtering
+- Ready for future enhancements (tags, annotations, full-text search)
+- Better performance with large reference collections
+- API layer ready for remote access
 
 ## Architecture
 
@@ -173,32 +205,46 @@ MyBible/
 │   ├── cli.py              # CLI command handlers
 │   ├── storage.py          # CSV storage operations
 │   ├── arxiv.py            # arXiv API integration
+│   ├── scholar.py          # Google Scholar integration
 │   ├── metadata.py         # Metadata management
 │   ├── markdown.py         # Markdown generation
 │   ├── bibtex.py           # BibTeX export
 │   ├── graph.py            # Citation graph features
 │   ├── ui.py               # Terminal UI utilities
-│   └── utils.py            # Utility functions
+│   ├── utils.py            # Utility functions
+│   ├── categories.py       # Category management system
+│   ├── models.py           # SQLAlchemy ORM models
+│   └── db_storage.py       # Database storage adapter
 ├── tests/                  # Test suite
 │   ├── test_storage.py
 │   ├── test_arxiv.py
 │   ├── test_markdown.py
-│   └── test_metadata.py
-├── references.csv          # Bibliography database
+│   ├── test_metadata.py
+│   ├── test_scholar.py
+│   └── __init__.py
+├── references.csv          # Bibliography database (CSV)
+├── categories.json         # Category ID mappings
 ├── pyproject.toml          # Project configuration
+├── pytest.ini              # Pytest configuration
+├── IMPROVEMENTS_SUMMARY.md # Detailed changelog for v2.0
 └── README.md              # This file
 ```
 
 ### Core Modules
 
-- **`cli.py`**: Command-line interface with rich formatting
-- **`storage.py`**: CSV file handling and duplicate detection
+- **`cli.py`**: Command-line interface with rich formatting and category prompts
+- **`storage.py`**: CSV file handling with ArxivID support and duplicate detection
 - **`arxiv.py`**: arXiv metadata fetching with error handling
+- **`scholar.py`**: Google Scholar integration with improved metadata extraction
 - **`metadata.py`**: Reference metadata management
-- **`markdown.py`**: Markdown table generation with category support
+- **`markdown.py`**: Markdown table generation with category support and author formatting
 - **`bibtex.py`**: BibTeX export functionality
 - **`graph.py`**: Citation network building and visualization
 - **`ui.py`**: Terminal UI components (colors, progress, confirmations)
+- **`categories.py`**: Category management with ID-based persistence
+- **`models.py`**: SQLAlchemy ORM models for database support
+- **`db_storage.py`**: Database storage adapter with migration capabilities
+- **`utils.py`**: Utility functions including enhanced author name formatting
 
 ## Dependencies
 
@@ -208,37 +254,59 @@ Core dependencies (installed via `uv sync`):
 - `rich`: Beautiful terminal output
 - `networkx`: Graph algorithms and data structures
 - `pyvis`: Interactive network visualization
+- `sqlalchemy`: ORM framework for database abstraction
 
 Development dependencies:
 - `pytest`: Testing framework
 - `pytest-cov`: Code coverage reporting
 
+[!Note]
+See `tests/README.md` for details on the comprehensive test suite covering modules.
+
 ## CLI Commands
 
+### Reference Management
 ```bash
 # View help
 mybib --help
+
+# Add reference from arXiv
+mybib add-arxiv https://arxiv.org/abs/2301.00001 [--category <name>]
+
+# Add reference from Google Scholar (with interactive search)
+mybib add-scholar --title "<article name>" [--category <name>]
+
+# Add reference manually
+mybib add --title "<title>" [--authors] [--journal] [--year] [--doi] [--category]
+
+# View help for specific commands
 mybib add-arxiv --help
+mybib add-scholar --help
 mybib add --help
-mybib markdown --help
-mybib bibtex --help
-mybib graph --help
+```
 
-# Add from arXiv
-mybib add-arxiv <arxiv_url> --category <category>
+### Output Generation
+```bash
+# Generate markdown tables
+mybib markdown --file references.csv --output references.md [--by-category]
 
-# Add manually
-mybib add --title "<title>" --authors "<authors>" --journal "<journal>" \
-  --year <year> --doi "<doi>" --category <category>
+# Generate BibTeX file
+mybib bibtex --file references.csv --output references.bib
 
-# Generate markdown
-mybib markdown [--file references.csv] [--output references.md]
+# Build citation network graph
+mybib graph --file references.csv --output citation_graph.html [--verbose]
+```
 
-# Generate BibTeX
-mybib bibtex [--file references.csv] [--output references.bib]
+### Database Operations (v2.0)
+```bash
+# Initialize database
+mybib db-init [--db-url sqlite:///bibliography.db]
 
-# Generate citation graph
-mybib graph [--file references.csv] [--output citation_graph.html] [--verbose]
+# Migrate CSV to database
+mybib db-migrate --file references.csv [--db-url sqlite:///bibliography.db]
+
+# Export database back to CSV
+mybib db-export --output backup.csv [--db-url sqlite:///bibliography.db]
 ```
 
 ## Data Format
@@ -251,32 +319,62 @@ References are stored in `references.csv` with the following columns:
 - **DOI**: Digital Object Identifier
 - **Category**: Research topic category
 - **Link**: URL (optional)
+- **ArxivID**: arXiv identifier (optional)
+
+Categories are managed in `categories.json` with ID-to-name mappings for case-insensitive organization.
+
+## Changelog
+
+### v2.0 (Latest)
+
+Major improvements to data quality and scalability:
+
+**✨ Improvements:**
+- Auto format authors as "FirstAuthor et al." with team name detection
+- Fixed ArxivID display precision (no more float rounding errors)
+- Enhanced Scholar metadata extraction (full year extraction, better DOI finding)
+- New category management system with persistent ID mappings
+- Foundation for database support with SQLAlchemy ORM
+
+**New Features:**
+- Database initialization and migration commands
+- CSV ↔ Database conversion tools
+- Interactive category selection by ID during reference addition
+
+**See [`IMPROVEMENTS_SUMMARY.md`](IMPROVEMENTS_SUMMARY.md) for detailed technical documentation.**
+
+### v1.0
+
+Initial release with CSV-based storage, arXiv/Scholar/manual entry, markdown/BibTeX export, and citation graph visualization.
 
 ## Future Enhancements
 
-Potential features for future versions:
-- Paper summaries and key insights
-- Personal reading notes and annotations
-- Reading progress tracking (read/unread status)
-- Topic clustering visualization
+Potential features enabled by v2.0 database foundation:
 - Advanced search and filtering
+- Paper summaries and reading notes
+- Reading progress tracking
+- Topic clustering visualization
 - Export to other formats (RIS, Zotero)
-- Integration with reference managers
-- Automated paper recommendation based on citations
+- Full-text search capabilities
+- Tag and annotation system
+- API layer for remote access
 
 ## Contributing
 
 Contributions are welcome! Feel free to:
-- Add new papers to the bibliography
 - Improve the CLI interface
 - Enhance visualization features
 - Expand test coverage
 - Report bugs or suggest improvements
 
+## Aknowledgements
+- Inspired by my need for better bibliography management tools. After struggling with manual CSV files and clunky reference managers, I wanted a modern, customizable solution that fits my workflow. MyBible is the result of that vision. Alternatively, there are [paperlib](https://github.com/Future-Scholars/paperlib) which seems to be a better tool for general use cases.
+- I have started this project with "traditional" coding practices, but at some point (exactly from commit [d8f992f](https://github.com/art-test-stack/MyBible/commit/d8f992f263cfc8657ec13dd3b657f4d548e71a6e)) I have switched to "vibe coding" practices with Claude Haiku 4.5. Hence, I have not written most of the features. 
+- The project is still in early stages, so there are many rough edges and missing features. Hence, it is mainly for my personal use, so it works well for computer science research. I am open to contributions and suggestions to make it better!
 
+# Example of output markdown table generated by `mybib markdown`
 
 ## LLMs Basics
-
 
 | Title |  Author(s) | Journal | Year | DOI  |  
 |-------|------------|---------|------|------|

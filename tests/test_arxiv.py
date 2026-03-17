@@ -1,10 +1,26 @@
 """Tests for arXiv metadata fetching module."""
 
 import pytest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch, Mock
 import sys
 
 from pkg.mybib import arxiv
+
+
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for test files."""
+    with tempfile.TemporaryDirectory() as temp_directory:
+        yield Path(temp_directory)
+
+
+@pytest.fixture
+def temp_file(temp_dir):
+    """Create a temporary file for testing."""
+    temp_path = temp_dir / "test_file.xml"
+    yield temp_path
 
 
 @pytest.fixture
@@ -88,6 +104,7 @@ class TestFetchArxivMetadata:
         assert result["doi"] == "10.48550/arXiv.1706.03762"
         assert result["journal"] == "NIPS 2017"
         assert result["link"] == "https://arxiv.org/abs/1706.03762"
+        assert result["arxiv_id"] == "1706.03762"
 
     @patch('pkg.mybib.arxiv.requests.get')
     def test_fetch_arxiv_metadata_multiple_authors(self, mock_get, sample_arxiv_response):

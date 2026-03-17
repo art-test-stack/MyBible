@@ -20,6 +20,9 @@ def _prepare_references_for_markdown(file_path: str = "references.csv"):
     
     df["Authors"] = df["Authors"].apply(reform_names)
     df["DOI"] = df.apply(lambda row: f"[{row.get('DOI', 'unknown')}]", axis=1)
+    # Ensure ArxivID stays as string for display (prevents float conversion)
+    if "ArxivID" in df.columns:
+        df["ArxivID"] = df["ArxivID"].astype(str)
     df = df.sort_values(by=["Category", "Year"], ascending=[True, False])
     
     return df
@@ -62,7 +65,12 @@ def make_markdown_tables_by_category(file_path: str = "references.csv") -> str:
     
     for category, group in df.groupby("Category"):
         output.append(f"## {category}\n")
-        table = group.drop(columns=["Category", "Link"]).to_markdown(index=False)
+        # Format ArxivID as string to avoid float conversion by to_markdown
+        display_group = group.copy()
+        if "ArxivID" in display_group.columns:
+            display_group["ArxivID"] = display_group["ArxivID"].astype(str).str.replace("nan", "")
+        
+        table = display_group.drop(columns=["Category", "Link"]).to_markdown(index=False)
         output.append(table)
         output.append("\n")
         
