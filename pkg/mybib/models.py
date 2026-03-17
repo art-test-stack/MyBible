@@ -1,15 +1,15 @@
 """SQLAlchemy ORM models for bibliography management."""
 
 from datetime import datetime
+
 from sqlalchemy import (
-    create_engine,
     Column,
-    Integer,
-    String,
-    Float,
     DateTime,
     ForeignKey,
     Index,
+    Integer,
+    String,
+    create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -49,7 +49,9 @@ class Reference(Base):
     link = Column(String(2000), nullable=True)
     arxiv_id = Column(String(50), nullable=True, index=True)
     scholar_id = Column(String(100), nullable=True, index=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True, index=True)
+    category_id = Column(
+        Integer, ForeignKey("categories.id"), nullable=True, index=True
+    )
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -63,15 +65,17 @@ class Reference(Base):
     )
 
     def __repr__(self):
-        return f"<Reference(id={self.id}, title='{self.title[:50]}...', year={self.year})>"
+        return (
+            f"<Reference(id={self.id}, title='{self.title[:50]}...', year={self.year})>"
+        )
 
 
 def create_db_engine(db_url: str = "sqlite:///bibliography.db"):
     """Create database engine.
-    
+
     Args:
         db_url: Database URL (default: SQLite)
-        
+
     Returns:
         SQLAlchemy engine
     """
@@ -80,7 +84,7 @@ def create_db_engine(db_url: str = "sqlite:///bibliography.db"):
 
 def init_db(engine):
     """Initialize database tables.
-    
+
     Args:
         engine: SQLAlchemy engine
     """
@@ -89,10 +93,10 @@ def init_db(engine):
 
 def get_session(engine):
     """Get database session.
-    
+
     Args:
         engine: SQLAlchemy engine
-        
+
     Returns:
         SQLAlchemy session
     """

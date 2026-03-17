@@ -1,8 +1,9 @@
 """CSV storage for bibliography references."""
 
-import pandas as pd
 import sys
 from pathlib import Path
+
+import pandas as pd
 
 
 def add_reference(
@@ -18,7 +19,7 @@ def add_reference(
     file_path: str = "references.csv",
 ) -> None:
     """Add a reference to the CSV file.
-    
+
     Args:
         title: Article title
         authors: Comma-separated author names
@@ -30,13 +31,13 @@ def add_reference(
         arxiv_id: arXiv identifier (optional)
         scholar_id: Google Scholar result ID (optional, used as DOI fallback)
         file_path: Path to the CSV file
-        
+
     Raises:
         SystemExit: If reference already exists
     """
     # Use scholar_id as DOI fallback if DOI not provided
     final_doi = doi if doi else scholar_id
-    
+
     new_reference = {
         "Title": title,
         "Authors": authors,
@@ -48,9 +49,9 @@ def add_reference(
         "ArxivID": arxiv_id or "",
     }
     row = pd.DataFrame([new_reference])
-    
+
     file_exists = Path(file_path).exists()
-    
+
     if file_exists:
         df_existing = pd.read_csv(file_path)
         # Convert ArxivID to string for comparison
@@ -59,16 +60,14 @@ def add_reference(
         existing_df = df_existing
         # Normalize DOI for comparison: convert to string, strip whitespace, lowercase
         existing_dois = set(
-            str(d).strip().lower() 
-            for d in existing_df["DOI"].to_list() 
-            if pd.notna(d)
+            str(d).strip().lower() for d in existing_df["DOI"].to_list() if pd.notna(d)
         )
         normalized_doi = str(final_doi).strip().lower() if final_doi else ""
-        
+
         if normalized_doi and normalized_doi in existing_dois:
             print("Reference already exists in the CSV file.")
             sys.exit(0)
-    
+
     # Ensure ArxivID is treated as string
     row["ArxivID"] = row["ArxivID"].astype(str)
     row.to_csv(file_path, mode="a", index=False, header=not file_exists)
@@ -76,10 +75,10 @@ def add_reference(
 
 def load_references(file_path: str = "references.csv") -> pd.DataFrame:
     """Load references from CSV file.
-    
+
     Args:
         file_path: Path to the CSV file
-        
+
     Returns:
         DataFrame with reference data
     """
@@ -93,9 +92,18 @@ def load_references(file_path: str = "references.csv") -> pd.DataFrame:
             df["ArxivID"] = ""
     except FileNotFoundError:
         df = pd.DataFrame(
-            columns=["Title", "Authors", "Journal", "Year", "DOI", "Link", "Category", "ArxivID"]
+            columns=[
+                "Title",
+                "Authors",
+                "Journal",
+                "Year",
+                "DOI",
+                "Link",
+                "Category",
+                "ArxivID",
+            ]
         )
         df = df.astype({"ArxivID": str})
         df.to_csv(file_path, index=False)
-    
+
     return df
