@@ -87,6 +87,12 @@ def handle_add_arxiv(args) -> None:
 
     # Get category using new category system
     category = prompt_for_category(metadata["title"], args.category)
+    if category is None:
+        category = console.input(
+            f"Enter category for '[bold cyan]{metadata['title']}[/]': "
+        )
+
+    category = category.lower().strip()
 
     # Show reference preview
     preview_data = {
