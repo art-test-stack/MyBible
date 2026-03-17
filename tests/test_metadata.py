@@ -1,6 +1,8 @@
 """Tests for metadata extraction module."""
 
 import sys
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +11,20 @@ import pytest
 sys.path.insert(0, "../pkg")
 
 from mybib import metadata
+
+
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for test files."""
+    with tempfile.TemporaryDirectory() as temp_directory:
+        yield Path(temp_directory)
+
+
+@pytest.fixture
+def temp_file(temp_dir):
+    """Create a temporary file for testing."""
+    temp_path = temp_dir / "test_file.txt"
+    yield temp_path
 
 
 class TestSourceDetection:

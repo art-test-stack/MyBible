@@ -5,8 +5,15 @@ import sys
 
 from .arxiv import fetch_arxiv_metadata
 from .bibtex import generate_bibtex
+from .categories import (
+    get_or_create_category,
+    list_categories,
+    load_categories,
+    save_categories,
+)
 from .graph import build_citation_graph, export_graph_html
 from .markdown import make_markdown_table, make_markdown_tables_by_category
+from .scholar import search_and_confirm_article
 from .storage import add_reference, load_references
 from .ui import (
     api_progress,
@@ -18,6 +25,50 @@ from .ui import (
     print_success,
     print_warning,
 )
+
+
+def prompt_for_category(title: str, category_arg: str = None) -> str:
+    """Prompt user to select or create a category.
+
+    Args:
+        title: Article title for context
+        category_arg: Pre-specified category (used if provided)
+
+    Returns:
+        Category name
+    """
+    if category_arg:
+        # If category argument provided, validate or create it
+        categories = load_categories()
+        cat_id, categories = get_or_create_category(category_arg, categories)
+        save_categories(categories)
+        return categories[cat_id]
+
+    # Show existing categories and allow selection or creation
+    categories = load_categories()
+    cat_list = list_categories(categories)
+
+    console.print("\n[bold]Available categories:[/]")
+    for cat_id, cat_name in cat_list:
+        console.print(f"  {cat_id}: {cat_name}")
+
+    # Prompt for selection
+    while True:
+        choice = console.input(
+            f"\n[bold]Select category ID for '{title}'[/] "
+            "(or enter new category name): "
+        ).strip()
+
+        if choice.isdigit() and choice in categories:
+            return categories[choice]
+        elif choice:
+            # Create new category
+            cat_id, categories = get_or_create_category(choice, categories)
+            save_categories(categories)
+            console.print(f"[green]Created category '{choice}' with ID {cat_id}[/]")
+            return categories[cat_id]
+        else:
+            console.print("[yellow]Please enter a valid category ID or name[/]")
 
 
 def handle_add_arxiv(args) -> None:
@@ -34,8 +85,8 @@ def handle_add_arxiv(args) -> None:
     with api_progress():
         metadata = fetch_arxiv_metadata(arxiv_id)
 
-    # Get category if not provided
-    category = args.category
+    # Get category using new category system
+    category = prompt_for_category(metadata["title"], args.category)
     if category is None:
         category = console.input(
             f"Enter category for '[bold cyan]{metadata['title']}[/]': "
@@ -71,6 +122,70 @@ def handle_add_arxiv(args) -> None:
         doi=metadata["doi"],
         link=metadata["link"],
         category=category,
+        arxiv_id=metadata.get("arxiv_id"),
+        file_path=args.file,
+    )
+    print_success(f"Added: {metadata['title']}")
+
+
+def handle_add_scholar(args) -> None:
+    """Handle the add-scholar command to search Google Scholar.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    title = args.title
+    url = args.url
+
+    print_info("Searching Google Scholar for your article...")
+
+    # If no title provided, try to extract from URL or abort
+    if not title and not url:
+        print_error("Either --title or --url must be provided")
+        sys.exit(1)
+
+    # Search query: use title if provided, else use URL
+    search_query = title if title else url
+
+    # Search and get confirmation from user
+    metadata = search_and_confirm_article(search_query)
+
+    if not metadata:
+        print_error("Could not find or confirm article on Google Scholar")
+        sys.exit(1)
+
+    # Get category using new category system
+    category = prompt_for_category(metadata["title"], args.category)
+
+    # Show reference preview
+    preview_data = {
+        "title": metadata["title"],
+        "authors": metadata["authors"],
+        "journal": metadata["journal"],
+        "year": metadata["year"],
+        "doi": metadata["doi"],
+    }
+    console.print()
+    display_reference_preview(preview_data)
+    console.print()
+
+    # Confirm before adding
+    if not confirm_action(
+        f"Add '[bold cyan]{metadata['title']}[/]' to category '[yellow]{category}[/]'?"
+    ):
+        print_warning("Aborted.")
+        sys.exit(0)
+
+    # Add reference to storage
+    add_reference(
+        title=metadata["title"],
+        authors=metadata["authors"],
+        journal=metadata["journal"],
+        year=metadata["year"],
+        doi=metadata.get("doi"),
+        link=metadata.get("link"),
+        category=category,
+        scholar_id=metadata.get("scholar_id"),
         file_path=args.file,
     )
     print_success(f"Added: {metadata['title']}")
@@ -79,38 +194,77 @@ def handle_add_arxiv(args) -> None:
 def handle_add_manual(args) -> None:
     """Handle the add command for manual reference entry.
 
+    If only title is provided, searches Google Scholar automatically.
+    All fields except title are optional.
+
     Args:
         args: Parsed command-line arguments
     """
+    # Check if we need to search Google Scholar
+    # If only title and category are provided (other fields are None), search Scholar
+    has_manual_metadata = any(
+        [
+            args.authors,
+            args.journal,
+            args.year,
+            args.doi,
+            args.link,
+        ]
+    )
+
+    if not has_manual_metadata:
+        # Only title provided, search Google Scholar
+        print_info("Searching Google Scholar for your article...")
+        metadata = search_and_confirm_article(args.title)
+
+        if not metadata:
+            print_error("Could not find or confirm article on Google Scholar")
+            sys.exit(1)
+    else:
+        # Use manually provided metadata
+        metadata = {
+            "title": args.title,
+            "authors": args.authors or "",
+            "journal": args.journal or "",
+            "year": args.year,
+            "doi": args.doi,
+            "link": args.link or "",
+        }
+
+    # Get category using new category system
+    category = prompt_for_category(metadata["title"], args.category)
+
     # Show reference preview
     preview_data = {
-        "title": args.title,
-        "authors": args.authors,
-        "journal": args.journal,
-        "year": args.year,
-        "doi": args.doi,
+        "title": metadata["title"],
+        "authors": metadata["authors"],
+        "journal": metadata["journal"],
+        "year": metadata["year"],
+        "doi": metadata["doi"],
     }
     console.print()
     display_reference_preview(preview_data)
     console.print()
 
     # Confirm before adding
-    msg = f"Add '[bold cyan]{args.title}[/]' to [yellow]{args.category}[/]?"
-    if not confirm_action(msg):
+    if not confirm_action(
+        f"Add '[bold cyan]{metadata['title']}[/]' to [yellow]{category}[/]?"
+    ):
         print_warning("Aborted.")
         sys.exit(0)
 
     add_reference(
-        title=args.title,
-        authors=args.authors,
-        journal=args.journal,
-        year=args.year,
-        doi=args.doi,
-        link=args.link,
-        category=args.category,
+        title=metadata["title"],
+        authors=metadata.get("authors") or None,
+        journal=metadata.get("journal") or None,
+        year=metadata.get("year"),
+        doi=metadata.get("doi"),
+        link=metadata.get("link"),
+        category=category,
+        scholar_id=metadata.get("scholar_id"),
         file_path=args.file,
     )
-    print_success(f"Added: {args.title}")
+    print_success(f"Added: {metadata['title']}")
 
 
 def handle_markdown(args) -> None:
@@ -153,7 +307,7 @@ def handle_bibtex(args) -> None:
 
 
 def handle_graph(args) -> None:
-    """Handle the graph command to build and visualize citation graph.
+    """Handle the graph command to build and visualize citations.
 
     Args:
         args: Parsed command-line arguments
@@ -172,14 +326,75 @@ def handle_graph(args) -> None:
     print_success(f"Citation graph exported to {output_file}")
 
 
+def handle_db_init(args) -> None:
+    """Handle database initialization.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    from .db_storage import DatabaseStorage
+
+    print_info(f"Initializing database: {args.db_url}")
+
+    try:
+        DatabaseStorage(args.db_url)
+        print_success("Database initialized successfully!")
+    except Exception as e:
+        print_error(f"Failed to initialize database: {e}")
+        sys.exit(1)
+
+
+def handle_db_migrate(args) -> None:
+    """Handle migration from CSV to database.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    from .db_storage import DatabaseStorage
+
+    print_info(f"Migrating from {args.file} to {args.db_url}")
+
+    try:
+        storage = DatabaseStorage(args.db_url)
+        stats = storage.migrate_from_csv(args.file)
+
+        console.print("\n[bold]Migration Statistics:[/]")
+        console.print(f"  Total: {stats['total']}")
+        console.print(f"  Added: {stats['added']}")
+        console.print(f"  Duplicates: {stats['duplicates']}")
+        console.print(f"  Errors: {stats['errors']}")
+
+        print_success("Migration completed!")
+    except Exception as e:
+        print_error(f"Failed to migrate database: {e}")
+        sys.exit(1)
+
+
+def handle_db_export(args) -> None:
+    """Handle export from database to CSV.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    from .db_storage import DatabaseStorage
+
+    print_info(f"Exporting from {args.db_url} to {args.output}")
+
+    try:
+        storage = DatabaseStorage(args.db_url)
+        count = storage.export_to_csv(args.output)
+        print_success(f"Exported {count} references to {args.output}")
+    except Exception as e:
+        print_error(f"Failed to export database: {e}")
+        sys.exit(1)
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
         prog="mybib",
-        description=(
-            "📚 Manage research paper references with ease. "
-            "Similar to gh, poetry, and uv!"
-        ),
+        description="📚 Manage research paper references with ease. "
+        "Similar to gh, poetry, and uv!",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -209,17 +424,31 @@ Examples:
     )
     add_arxiv_parser.set_defaults(func=handle_add_arxiv)
 
+    # add-scholar command
+    add_scholar_parser = subparsers.add_parser(
+        "add-scholar", help="Add a reference from Google Scholar"
+    )
+    add_scholar_parser.add_argument("--title", help="Article title to search for")
+    add_scholar_parser.add_argument("--url", help="Article URL to search for")
+    add_scholar_parser.add_argument("--category", help="Category for the reference")
+    add_scholar_parser.add_argument(
+        "--file",
+        default="references.csv",
+        help="CSV file path (default: references.csv)",
+    )
+    add_scholar_parser.set_defaults(func=handle_add_scholar)
+
     # add command
-    add_parser = subparsers.add_parser("add", help="Add a reference manually")
-    add_parser.add_argument("--title", required=True, help="Article title")
-    add_parser.add_argument(
-        "--authors", required=True, help="Comma-separated author names"
+    add_parser = subparsers.add_parser(
+        "add",
+        help="Add a reference manually (or search Google Scholar"
+        " if only title provided)",
     )
-    add_parser.add_argument(
-        "--journal", required=True, help="Journal or publication name"
-    )
-    add_parser.add_argument("--year", required=True, type=int, help="Publication year")
-    add_parser.add_argument("--doi", required=True, help="DOI identifier")
+    add_parser.add_argument("--title", required=True, help="Article title (required)")
+    add_parser.add_argument("--authors", help="Comma-separated author names")
+    add_parser.add_argument("--journal", help="Journal or publication name")
+    add_parser.add_argument("--year", type=int, help="Publication year")
+    add_parser.add_argument("--doi", help="DOI identifier")
     add_parser.add_argument("--link", help="URL link to the resource")
     add_parser.add_argument("--category", help="Category for classification")
     add_parser.add_argument(
@@ -272,6 +501,45 @@ Examples:
         "--verbose", action="store_true", help="Show verbose output references"
     )
     graph_parser.set_defaults(func=handle_graph)
+
+    # db-init command
+    db_init_parser = subparsers.add_parser(
+        "db-init", help="Initialize database for bibliography management"
+    )
+    db_init_parser.add_argument(
+        "--db-url",
+        default="sqlite:///bibliography.db",
+        help="Database URL (default: sqlite:///bibliography.db)",
+    )
+    db_init_parser.set_defaults(func=handle_db_init)
+
+    # db-migrate command
+    db_migrate_parser = subparsers.add_parser(
+        "db-migrate", help="Migrate references from CSV to database"
+    )
+    db_migrate_parser.add_argument(
+        "--file",
+        default="references.csv",
+        help="CSV file path (default: references.csv)",
+    )
+    db_migrate_parser.add_argument(
+        "--db-url",
+        default="sqlite:///bibliography.db",
+        help="Database URL (default: sqlite:///bibliography.db)",
+    )
+    db_migrate_parser.set_defaults(func=handle_db_migrate)
+
+    # db-export command
+    db_export_parser = subparsers.add_parser(
+        "db-export", help="Export database references to CSV"
+    )
+    db_export_parser.add_argument("--output", required=True, help="Output CSV file")
+    db_export_parser.add_argument(
+        "--db-url",
+        default="sqlite:///bibliography.db",
+        help="Database URL (default: sqlite:///bibliography.db)",
+    )
+    db_export_parser.set_defaults(func=handle_db_export)
 
     args = parser.parse_args()
 

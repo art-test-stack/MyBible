@@ -13,13 +13,9 @@ from pkg.mybib import storage
 @pytest.fixture
 def temp_csv():
     """Create a temporary CSV file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        temp_path = f.name
-    # Delete the empty file so it can be created fresh
-    Path(temp_path).unlink(missing_ok=True)
-    yield temp_path
-    # Cleanup
-    Path(temp_path).unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir) / "test_references.csv"
+        yield str(temp_path)
 
 
 @pytest.fixture
@@ -33,6 +29,7 @@ def sample_references():
         "doi": "10.1234/example.2023",
         "link": "https://example.com/paper1",
         "category": "Machine Learning",
+        "arxiv_id": None,
     }
 
 
@@ -49,6 +46,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
+            arxiv_id=sample_references["arxiv_id"],
             file_path=temp_csv,
         )
 
@@ -68,6 +66,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
+            arxiv_id=sample_references["arxiv_id"],
             file_path=temp_csv,
         )
 
@@ -98,6 +97,7 @@ class TestAddReference:
             doi=sample_references["doi"],
             link=sample_references["link"],
             category=sample_references["category"],
+            arxiv_id=sample_references["arxiv_id"],
             file_path=temp_csv,
         )
 
@@ -122,6 +122,7 @@ class TestAddReference:
             "DOI",
             "Link",
             "Category",
+            "ArxivID",
         ]
         assert list(df.columns) == expected_headers
 
@@ -275,6 +276,7 @@ class TestLoadReferences:
             "DOI",
             "Link",
             "Category",
+            "ArxivID",
         ]
         assert Path(temp_csv).exists()
 
@@ -296,3 +298,83 @@ class TestLoadReferences:
         df = storage.load_references(temp_csv)
         assert len(df) == 3
         assert df["Year"].tolist() == [2020, 2021, 2022]
+
+
+class TestScholarIdFallback:
+    """Test scholar_id as DOI fallback."""
+
+    def test_add_reference_with_scholar_id_fallback(self, temp_csv):
+        """Test that scholar_id is used as DOI when DOI is not provided."""
+        storage.add_reference(
+            title="Scholar Paper",
+            authors="Scholar Author",
+            journal="Scholar Journal",
+            year=2023,
+            doi=None,
+            link="https://scholar.com/paper",
+            category="Testing",
+            scholar_id="scholar_id_12345",
+            file_path=temp_csv,
+        )
+
+        df = pd.read_csv(temp_csv)
+        assert len(df) == 1
+        assert df.iloc[0]["DOI"] == "scholar_id_12345"
+
+    def test_add_reference_prefers_doi_over_scholar_id(self, temp_csv):
+        """Test that DOI is preferred when both DOI and scholar_id are provided."""
+        storage.add_reference(
+            title="Both IDs Paper",
+            authors="Both IDs Author",
+            journal="Both IDs Journal",
+            year=2023,
+            doi="10.1234/actual.doi",
+            link="https://example.com/paper",
+            category="Testing",
+            scholar_id="scholar_id_67890",
+            file_path=temp_csv,
+        )
+
+        df = pd.read_csv(temp_csv)
+        assert len(df) == 1
+        assert df.iloc[0]["DOI"] == "10.1234/actual.doi"
+
+
+class TestArxivIdColumn:
+    """Test arxiv_id column storage."""
+
+    def test_add_reference_with_arxiv_id(self, temp_csv):
+        """Test that arxiv_id is stored in the database."""
+        storage.add_reference(
+            title="ArXiv Paper",
+            authors="ArXiv Author",
+            journal="arXiv",
+            year=2023,
+            doi="10.48550/arXiv.2301.00001",
+            link="https://arxiv.org/abs/2301.00001",
+            category="Machine Learning",
+            arxiv_id="2301.00001",
+            file_path=temp_csv,
+        )
+
+        df = pd.read_csv(temp_csv, dtype={"ArxivID": str})
+        assert len(df) == 1
+        assert df.iloc[0]["ArxivID"] == "2301.00001"
+
+    def test_add_reference_without_arxiv_id(self, temp_csv):
+        """Test that arxiv_id is empty for non-arXiv papers."""
+        storage.add_reference(
+            title="Non-ArXiv Paper",
+            authors="Non-ArXiv Author",
+            journal="Journal",
+            year=2023,
+            doi="10.1234/example.2023",
+            link="https://example.com/paper",
+            category="Research",
+            file_path=temp_csv,
+        )
+
+        df = pd.read_csv(temp_csv, dtype={"ArxivID": str})
+        assert len(df) == 1
+        # Check for empty string or NaN (which can happen in CSV round-trip)
+        assert df.iloc[0]["ArxivID"] == "" or pd.isna(df.iloc[0]["ArxivID"])

@@ -4,3 +4,6 @@ __pycache__/
 uv.lock
 *egg-info
 table.md
+.env
+categories.json
+*.bib

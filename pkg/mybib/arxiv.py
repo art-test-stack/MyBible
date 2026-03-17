@@ -13,7 +13,7 @@ def fetch_arxiv_metadata(arxiv_id: str) -> dict:
         arxiv_id: arXiv identifier (e.g., '2301.00001')
 
     Returns:
-        Dictionary with keys: title, authors, journal, year, doi, link
+        Dictionary with keys: title, authors, journal, year, doi, link, arxiv_id
 
     Raises:
         SystemExit: If API call fails or no entry found
@@ -56,4 +56,5 @@ def fetch_arxiv_metadata(arxiv_id: str) -> dict:
         "year": year,
         "doi": doi,
         "link": f"https://arxiv.org/abs/{arxiv_id}",
+        "arxiv_id": arxiv_id,
     }

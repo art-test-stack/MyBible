@@ -12,13 +12,9 @@ from pkg.mybib import markdown, storage
 @pytest.fixture
 def temp_csv():
     """Create a temporary CSV file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        temp_path = f.name
-    # Delete the empty file so it can be created fresh
-    Path(temp_path).unlink(missing_ok=True)
-    yield temp_path
-    # Cleanup
-    Path(temp_path).unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir) / "test_references.csv"
+        yield str(temp_path)
 
 
 @pytest.fixture
@@ -307,6 +303,7 @@ class TestMakeMarkdownTablesByCategory:
         if basics_pos > 0 and nn_pos > 0:
             # Get the category that comes before them
             ml_section_start = result.rfind("## Machine Learning")
+            result.rfind("## Computer Vision")
 
             # Check they're in the ML section and ordered by year
             if ml_section_start > 0 and ml_section_start < min(basics_pos, nn_pos):
