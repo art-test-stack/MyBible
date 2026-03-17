@@ -1,37 +1,277 @@
-# MyBible
+# 📚 MyBible - Research Paper Bibliography Manager
 
-This repository contains a non-exhaustive curated list of important research papers in different fields, mostly from AI-research, that I have studied. 
+A modern, feature-rich CLI tool for managing a curated collection of research papers with beautiful terminal output, interactive visualizations, and comprehensive testing.
 
-The goal is to provide myself a comprehensive resource for quickly recalling important papers and their key contributions, as well as to share this resource with others who might find it useful.
+## Overview
 
-I plan to keep this repository updated with new papers that I find interesting and relevant, and to organize them in a way that makes it easy to navigate and find specific topics.
+MyBible is a comprehensive bibliography management system designed to help researchers organize, track, and analyze their research paper collections. This repository contains a curated list of important research papers (primarily from AI research) with tools to:
 
-The code in this repository allows me to easily add new papers, generate markdown tables for better visualization, and maintain the list in a structured format. It can be used as a template for anyone who wants to create their own curated list of research papers, or anyone who wants to extend the list of papers.
+- ✨ **Add papers** from arXiv or manually with beautiful CLI prompts
+- 📊 **Generate markdown tables** for easy navigation and sharing
+- 📖 **Export to BibTeX** for use in LaTeX documents
+- 🕸️ **Visualize citation networks** with interactive HTML graphs
+- ✅ **Track duplicates** with intelligent detection
+- 🧪 **Comprehensive test coverage** for reliability
 
-I will probably add the following featuresin the future:
-- summaries, 
-- key insights, 
-- personal notes for each paper in the future, 
-- a way to track which papers I have read and which ones I still need to read,
-- graphical visualizations of the relationships between papers (e.g., citation networks, topic clusters).
+The papers are organized into categories based on their topics, with each entry including title, authors, journal, publication year, and DOI links for easy access.
 
-## Usage
+## Quick Start
 
-- The papers are organized into categories based on their topics.
-- Each entry includes the title, author(s), journal, year of publication, and a DOI link for easy access.
+### Installation
 
-### 
-
-### How to Add a Paper
-
-- If the paper is from arxiv, run the following command, replacing `<arxiv_url>` with the actual arXiv url of the paper:
 ```bash
-uv sync && uv run main.py add-arxiv <arxiv_url> --category <category_name>
+# Clone and set up the environment
+git clone <repository-url>
+cd MyBible
+uv sync
 ```
-- If the paper is not from arxiv, run the following command, replacing the placeholders with the actual information:
+
+### Adding Papers
+
+#### From arXiv
 ```bash
-uv sync && uv run main.py add --title "<paper_title>" --authors "<author1>, <author2>, ..." --journal "<journal_name>" --year <publication_year> --doi "<doi_link>" --category <category_name>
+uv run mybib add-arxiv <arxiv_url> --category <category_name>
 ```
+
+Example:
+```bash
+uv run mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "LLMs Basics"
+```
+
+#### Manual Entry
+```bash
+uv run mybib add --title "<title>" --authors "<author1>, <author2>, ..." \
+  --journal "<journal>" --year <year> --doi "<doi>" --category <category>
+```
+
+### Generating Output
+
+#### Markdown Tables
+```bash
+uv run mybib markdown --file references.csv --output references.md
+```
+
+#### BibTeX Export
+```bash
+uv run mybib bibtex --file references.csv --output references.bib
+```
+
+#### Citation Network Graph
+```bash
+uv run mybib graph --file references.csv --output citation_graph.html
+```
+
+## Features
+
+### 🎨 Modern CLI User Experience
+
+All commands feature:
+- **Colored output**: Success (✓), error (✗), warning (⚠), and info (ℹ) messages
+- **Progress indicators**: Smooth animations when fetching from APIs
+- **Confirmation prompts**: Safe defaults for destructive actions
+- **Beautiful tables**: Rich formatting for better readability
+
+Example of adding a paper:
+```
+Title: Attention is all you need
+Authors: Vaswani et al.
+Journal: NeurIPS
+Year: 2017
+DOI: 10.1038/nature12373
+
+Add 'Attention is all you need' to category 'LLMs Basics'? [y/N]: y
+✓ Reference added successfully to category 'LLMs Basics'
+```
+
+### 📊 Markdown Table Generation
+
+Automatically generate organized markdown tables from your bibliography:
+- Tables organized by category
+- Columns: Title, Authors, Journal, Year, DOI
+- Clickable DOI links
+- Proper author name formatting (et al. for 3+ authors)
+- Sorted by category and publication year
+
+### 📖 BibTeX Export
+
+Generate standard BibTeX files for LaTeX documents with properly formatted entries including:
+- Author names
+- Publication title
+- Journal/Venue
+- Publication year
+- DOI formatting
+
+### 🕸️ Citation Network Visualization
+
+Build interactive citation graphs showing how papers in your library cite each other:
+- **Network building**: Queries Crossref API for citation relationships
+- **Interactive visualization**: Zoom, pan, and drag nodes
+- **Physics simulation**: Automatic layout using Barnes-Hut algorithm
+- **Metadata on hover**: View paper details without clicking
+
+**Features:**
+- Directed graph representation (A → B means A cites B)
+- Only includes edges between papers in your library
+- Color-coded visualization
+- Handles network errors gracefully with retry logic
+
+**Usage:**
+```bash
+# Generate citation graph with verbose output
+mybib graph --file references.csv --output my_citations.html --verbose
+```
+
+### ✅ Duplicate Detection
+
+Built-in duplicate detection when adding new papers:
+- DOI-based matching
+- Case-insensitive comparison
+- Whitespace normalization
+- Prevents accidental duplicates in your bibliography
+
+### 🧪 Comprehensive Test Suite
+
+The project includes extensive pytest tests covering:
+
+**Storage Module** (`test_storage.py`):
+- Adding references to CSV files
+- Duplicate detection with various formats
+- Loading and preserving reference data
+
+**ArXiv Module** (`test_arxiv.py`):
+- Metadata fetching from arXiv API
+- Multiple author parsing
+- Error handling and fallbacks
+- URL formation and validation
+
+**Markdown Module** (`test_markdown.py`):
+- Table generation with various formats
+- Category-based organization
+- Author name reformatting
+- Sorting and filtering
+
+**Running Tests:**
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test module
+python -m pytest tests/test_storage.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=pkg/mybib
+```
+
+## Architecture
+
+### Project Structure
+
+```
+MyBible/
+├── pkg/mybib/              # Main package
+│   ├── __init__.py
+│   ├── cli.py              # CLI command handlers
+│   ├── storage.py          # CSV storage operations
+│   ├── arxiv.py            # arXiv API integration
+│   ├── metadata.py         # Metadata management
+│   ├── markdown.py         # Markdown generation
+│   ├── bibtex.py           # BibTeX export
+│   ├── graph.py            # Citation graph features
+│   ├── ui.py               # Terminal UI utilities
+│   └── utils.py            # Utility functions
+├── tests/                  # Test suite
+│   ├── test_storage.py
+│   ├── test_arxiv.py
+│   ├── test_markdown.py
+│   └── test_metadata.py
+├── references.csv          # Bibliography database
+├── pyproject.toml          # Project configuration
+└── README.md              # This file
+```
+
+### Core Modules
+
+- **`cli.py`**: Command-line interface with rich formatting
+- **`storage.py`**: CSV file handling and duplicate detection
+- **`arxiv.py`**: arXiv metadata fetching with error handling
+- **`metadata.py`**: Reference metadata management
+- **`markdown.py`**: Markdown table generation with category support
+- **`bibtex.py`**: BibTeX export functionality
+- **`graph.py`**: Citation network building and visualization
+- **`ui.py`**: Terminal UI components (colors, progress, confirmations)
+
+## Dependencies
+
+Core dependencies (installed via `uv sync`):
+- `pandas`: CSV data handling
+- `requests`: HTTP requests for APIs
+- `rich`: Beautiful terminal output
+- `networkx`: Graph algorithms and data structures
+- `pyvis`: Interactive network visualization
+
+Development dependencies:
+- `pytest`: Testing framework
+- `pytest-cov`: Code coverage reporting
+
+## CLI Commands
+
+```bash
+# View help
+mybib --help
+mybib add-arxiv --help
+mybib add --help
+mybib markdown --help
+mybib bibtex --help
+mybib graph --help
+
+# Add from arXiv
+mybib add-arxiv <arxiv_url> --category <category>
+
+# Add manually
+mybib add --title "<title>" --authors "<authors>" --journal "<journal>" \
+  --year <year> --doi "<doi>" --category <category>
+
+# Generate markdown
+mybib markdown [--file references.csv] [--output references.md]
+
+# Generate BibTeX
+mybib bibtex [--file references.csv] [--output references.bib]
+
+# Generate citation graph
+mybib graph [--file references.csv] [--output citation_graph.html] [--verbose]
+```
+
+## Data Format
+
+References are stored in `references.csv` with the following columns:
+- **Title**: Paper title
+- **Authors**: Author names (comma-separated)
+- **Journal**: Publication venue
+- **Year**: Publication year
+- **DOI**: Digital Object Identifier
+- **Category**: Research topic category
+- **Link**: URL (optional)
+
+## Future Enhancements
+
+Potential features for future versions:
+- Paper summaries and key insights
+- Personal reading notes and annotations
+- Reading progress tracking (read/unread status)
+- Topic clustering visualization
+- Advanced search and filtering
+- Export to other formats (RIS, Zotero)
+- Integration with reference managers
+- Automated paper recommendation based on citations
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+- Add new papers to the bibliography
+- Improve the CLI interface
+- Enhance visualization features
+- Expand test coverage
+- Report bugs or suggest improvements
 
 
 
