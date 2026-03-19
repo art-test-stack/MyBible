@@ -7,3 +7,4 @@ table.md
 .env
 categories.json
 *.bib
+*.db

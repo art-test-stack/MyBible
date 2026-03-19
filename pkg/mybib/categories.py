@@ -52,7 +52,7 @@ def get_or_create_category(
         categories = load_categories()
 
     # Normalize category name
-    normalized = name.lower().strip()
+    normalized = name.strip().lower()
 
     # Check if category already exists (case-insensitive)
     for cat_id, cat_name in categories.items():

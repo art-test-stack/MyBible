@@ -206,7 +206,7 @@ You get 250 searches/month (about 8-10 active sessions). That's plenty for most 
 | `SERPAPI_KEY not set` | Run `export SERPAPI_KEY="your-key"` |
 | Article not found | Try a simpler title or author name |
 | "Command not found: mybib" | Activate venv: `source .venv/bin/activate` |
-| Import errors | Make sure you're in the right directory: `cd /Users/arthurtestard/MyBible` |
+| Import errors | Make sure you're in the right directory: `cd /path/to/MyBible` |
 
 ## Data Flow
 

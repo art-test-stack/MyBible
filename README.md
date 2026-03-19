@@ -35,12 +35,12 @@ mybib add-arxiv <arxiv_url> --category <category_name>
 
 Example:
 ```bash
-mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "LLMs Basics"
+mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "Machine Learning"
 ```
 
 #### Automated Google Scholar Search
 ```bash
-mybib add --title "Attention is all you need" --category "LLMs Basics"
+mybib add --title "Attention is all you need" --category "Machine Learning"
 ```
 
 #### Manual Entry
@@ -84,8 +84,8 @@ Journal: NeurIPS
 Year: 2017
 DOI: 10.1038/nature12373
 
-Add 'Attention is all you need' to category 'LLMs Basics'? [y/N]: y
-✓ Reference added successfully to category 'LLMs Basics'
+Add 'Attention is all you need' to category 'Machine Learning'? [y/N]: y
+✓ Reference added successfully to category 'Machine Learning'
 ```
 
 ### 📊 Markdown Table Generation
@@ -162,7 +162,7 @@ Built-in duplicate detection when adding new papers:
 ```bash
 # Interactive category selection during add
 mybib add-arxiv https://arxiv.org/abs/2301.00001
-# Shows: Available categories: 1: alignment, 2: deep learning, 3: LLMs Basics
+# Shows: Available categories: 1: Alignment, 2: Deep Learning, 3: Machine Learning
 ```
 
 ### 🗄️ Database Foundation (SQLAlchemy ORM)

@@ -92,7 +92,7 @@ def handle_add_arxiv(args) -> None:
             f"Enter category for '[bold cyan]{metadata['title']}[/]': "
         )
 
-    category = category.lower().strip()
+    category = category.strip()
 
     # Show reference preview
     preview_data = {
@@ -487,7 +487,7 @@ Examples:
 
     # graph command
     graph_parser = subparsers.add_parser(
-        "graph", help="Build and visualize citation graph"
+        "graph", help="Build and visualize citation graph (WIP)"
     )
     graph_parser.add_argument(
         "--file",
