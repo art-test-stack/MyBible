@@ -7,6 +7,7 @@ A modern, feature-rich CLI tool for managing a curated collection of research pa
 MyBible is a comprehensive bibliography management system designed to help researchers organize, track, and analyze their research paper collections. This repository contains a curated list of important research papers (primarily from AI research) with tools to:
 
 - ✨ **Add papers** from arXiv or manually with beautiful CLI prompts
+- 🔗 **Add repositories** from GitHub and Hugging Face
 - 📊 **Generate markdown tables** for easy navigation and sharing
 - 📖 **Export to BibTeX** for use in LaTeX documents
 - 🕸️ **Visualize citation networks** with interactive HTML graphs
@@ -41,6 +42,17 @@ mybib add-arxiv https://arxiv.org/abs/2401.00001 --category "Machine Learning"
 #### Automated Google Scholar Search
 ```bash
 mybib add --title "Attention is all you need" --category "Machine Learning"
+```
+
+#### From GitHub or Hugging Face
+```bash
+mybib add-repo <repo_url> --category <category_name>
+```
+
+Examples:
+```bash
+mybib add-repo https://github.com/openai/whisper --category "Speech"
+mybib add-repo https://huggingface.co/google/gemma-2-2b --category "LLM"
 ```
 
 #### Manual Entry
@@ -273,6 +285,9 @@ mybib --help
 # Add reference from arXiv
 mybib add-arxiv https://arxiv.org/abs/2301.00001 [--category <name>]
 
+# Add reference from GitHub or Hugging Face repository
+mybib add-repo <repo_url> [--category <name>]
+
 # Add reference from Google Scholar (with interactive search)
 mybib add-scholar --title "<article name>" [--category <name>]
 
@@ -281,6 +296,7 @@ mybib add --title "<title>" [--authors] [--journal] [--year] [--doi] [--category
 
 # View help for specific commands
 mybib add-arxiv --help
+mybib add-repo --help
 mybib add-scholar --help
 mybib add --help
 ```

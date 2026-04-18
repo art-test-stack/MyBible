@@ -8,3 +8,4 @@ table.md
 categories.json
 *.bib
 *.db
+.DS_Store

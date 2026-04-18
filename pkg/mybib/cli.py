@@ -13,6 +13,7 @@ from .categories import (
 )
 from .graph import build_citation_graph, export_graph_html
 from .markdown import make_markdown_table, make_markdown_tables_by_category
+from .repo import fetch_repo_metadata
 from .scholar import search_and_confirm_article
 from .storage import add_reference, load_references
 from .ui import (
@@ -186,6 +187,52 @@ def handle_add_scholar(args) -> None:
         link=metadata.get("link"),
         category=category,
         scholar_id=metadata.get("scholar_id"),
+        file_path=args.file,
+    )
+    print_success(f"Added: {metadata['title']}")
+
+
+def handle_add_repo(args) -> None:
+    """Handle the add-repo command.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    print_info(f"Fetching repository metadata for: {args.repo_url}")
+    with api_progress():
+        metadata = fetch_repo_metadata(args.repo_url)
+
+    # Get category using new category system
+    category = prompt_for_category(metadata["title"], args.category)
+
+    # Show reference preview
+    preview_data = {
+        "title": metadata["title"],
+        "authors": metadata["authors"],
+        "journal": metadata["journal"],
+        "year": metadata["year"],
+        "doi": metadata["doi"],
+    }
+    console.print()
+    display_reference_preview(preview_data)
+    console.print()
+
+    # Confirm before adding
+    if not confirm_action(
+        f"Add '[bold cyan]{metadata['title']}[/]' to category '[yellow]{category}[/]'?"
+    ):
+        print_warning("Aborted.")
+        sys.exit(0)
+
+    # Add reference to storage
+    add_reference(
+        title=metadata["title"],
+        authors=metadata["authors"],
+        journal=metadata["journal"],
+        year=metadata["year"],
+        doi=metadata["doi"],
+        link=metadata["link"],
+        category=category,
         file_path=args.file,
     )
     print_success(f"Added: {metadata['title']}")
@@ -399,6 +446,7 @@ def main() -> None:
         epilog="""
 Examples:
   mybib add-arxiv https://arxiv.org/abs/2301.00001 --category ML
+    mybib add-repo https://github.com/owner/repo --category Tools
   mybib add --title "My Paper" --authors "Author Name" --journal "Nature" \
     --year 2024 --doi "10.xxxx/xxxxx" --category Science
   mybib markdown --file references.csv --output README.md
@@ -423,6 +471,25 @@ Examples:
         help="CSV file path (default: references.csv)",
     )
     add_arxiv_parser.set_defaults(func=handle_add_arxiv)
+
+    # add-repo command
+    add_repo_parser = subparsers.add_parser(
+        "add-repo", help="Add a reference from a GitHub or Hugging Face repository"
+    )
+    add_repo_parser.add_argument(
+        "repo_url",
+        help=(
+            "Repository URL (e.g., https://github.com/owner/repo or "
+            "https://huggingface.co/namespace/repo)"
+        ),
+    )
+    add_repo_parser.add_argument("--category", help="Category for the reference")
+    add_repo_parser.add_argument(
+        "--file",
+        default="references.csv",
+        help="CSV file path (default: references.csv)",
+    )
+    add_repo_parser.set_defaults(func=handle_add_repo)
 
     # add-scholar command
     add_scholar_parser = subparsers.add_parser(
