@@ -19,10 +19,12 @@ def fetch_arxiv_metadata(arxiv_id: str) -> dict:
         SystemExit: If API call fails or no entry found
     """
     url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
 
     if response.status_code != 200:
         print(f"Error fetching arxiv metadata: {response.status_code}")
+        print(f"Reason: {response.reason}")
+        print(f"Raise error: {response.raise_for_status()}")
         sys.exit(1)
 
     root = ET.fromstring(response.content)
