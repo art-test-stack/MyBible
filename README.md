@@ -73,6 +73,13 @@ mybib markdown --file references.csv --output references.md
 mybib bibtex --file references.csv --output references.bib
 ```
 
+#### Backfill Missing BibTeX
+```bash
+mybib sync-bibtex --file references.csv
+```
+
+This stores BibTeX entries in files under `bibtex_entries/` (configurable), and keeps only paths in `references.csv`.
+
 #### Citation Network Graph
 ```bash
 mybib graph --file references.csv --output citation_graph.html
@@ -117,6 +124,11 @@ Generate standard BibTeX files for LaTeX documents with properly formatted entri
 - Journal/Venue
 - Publication year
 - DOI formatting
+
+When available, MyBible now fetches and stores source BibTeX entries in files:
+- `add-arxiv` fetches citation BibTeX from arXiv
+- `add-repo` fetches citation BibTeX from repository README files (GitHub/Hugging Face)
+- `sync-bibtex` backfills missing BibTeX for references already stored in CSV
 
 ### 🕸️ Citation Network Visualization
 
@@ -218,6 +230,7 @@ MyBible/
 │   ├── storage.py          # CSV storage operations
 │   ├── arxiv.py            # arXiv API integration
 │   ├── scholar.py          # Google Scholar integration
+│   ├── citation.py         # Citation BibTeX fetching and parsing
 │   ├── metadata.py         # Metadata management
 │   ├── markdown.py         # Markdown generation
 │   ├── bibtex.py           # BibTeX export
@@ -248,6 +261,7 @@ MyBible/
 - **`storage.py`**: CSV file handling with ArxivID support and duplicate detection
 - **`arxiv.py`**: arXiv metadata fetching with error handling
 - **`scholar.py`**: Google Scholar integration with improved metadata extraction
+- **`citation.py`**: BibTeX extraction from arXiv and repository README files
 - **`metadata.py`**: Reference metadata management
 - **`markdown.py`**: Markdown table generation with category support and author formatting
 - **`bibtex.py`**: BibTeX export functionality
@@ -294,11 +308,15 @@ mybib add-scholar --title "<article name>" [--category <name>]
 # Add reference manually
 mybib add --title "<title>" [--authors] [--journal] [--year] [--doi] [--category]
 
+# Fetch and store missing BibTeX for existing references
+mybib sync-bibtex [--file references.csv] [--force] [--bibtex-dir bibtex_entries]
+
 # View help for specific commands
 mybib add-arxiv --help
 mybib add-repo --help
 mybib add-scholar --help
 mybib add --help
+mybib sync-bibtex --help
 ```
 
 ### Output Generation
@@ -336,6 +354,8 @@ References are stored in `references.csv` with the following columns:
 - **Category**: Research topic category
 - **Link**: URL (optional)
 - **ArxivID**: arXiv identifier (optional)
+- **BibTeX**: Legacy inline BibTeX field (kept for backward compatibility)
+- **BibTeXPath**: Path to BibTeX file stored on disk
 
 Categories are managed in `categories.json` with ID-to-name mappings for case-insensitive organization.
 

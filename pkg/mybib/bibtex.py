@@ -1,13 +1,16 @@
 """Generate BibTeX files from reference data."""
 
+from pathlib import Path
+
 import pandas as pd
 
 
-def generate_bibtex(df: pd.DataFrame) -> str:
+def generate_bibtex(df: pd.DataFrame, csv_file: str = "references.csv") -> str:
     """Generate BibTeX entries from a DataFrame of references.
 
     Args:
         df: DataFrame with columns: Title, Authors, Journal, Year, DOI, Link
+        csv_file: Source CSV path used to resolve relative BibTeX file paths
 
     Returns:
         String containing BibTeX formatted entries
@@ -35,6 +38,10 @@ def generate_bibtex(df: pd.DataFrame) -> str:
             col_mapping["link"] = col
         elif col_lower == "url":
             col_mapping["link"] = col
+        elif col_lower in {"bibtex", "bibtexentry"}:
+            col_mapping["bibtex"] = col
+        elif col_lower in {"bibtexpath", "bib_path"}:
+            col_mapping["bibtex_path"] = col
 
     entries = []
 
@@ -46,9 +53,23 @@ def generate_bibtex(df: pd.DataFrame) -> str:
         year = str(row.get(col_mapping.get("year", "Year"), "")).strip()
         doi = str(row.get(col_mapping.get("doi", "DOI"), "")).strip()
         link = str(row.get(col_mapping.get("link", "Link"), "")).strip()
+        raw_bibtex = str(row.get(col_mapping.get("bibtex", "BibTeX"), "")).strip()
+        bibtex_path = str(
+            row.get(col_mapping.get("bibtex_path", "BibTeXPath"), "")
+        ).strip()
 
         # Skip entries with missing critical fields
         if not title:
+            continue
+
+        file_bibtex = _read_bibtex_from_path(csv_file=csv_file, bibtex_path=bibtex_path)
+        if file_bibtex:
+            entries.append(file_bibtex)
+            continue
+
+        # Prefer citation BibTeX fetched from source when available
+        if raw_bibtex and raw_bibtex.lower() != "nan" and raw_bibtex.startswith("@"):
+            entries.append(raw_bibtex)
             continue
 
         # Use DOI as the key, or create one from title if DOI is missing
@@ -75,4 +96,23 @@ def generate_bibtex(df: pd.DataFrame) -> str:
 
         entries.append(entry)
 
-    return "\n".join(entries)
+    return "\n\n".join(entries)
+
+
+def _read_bibtex_from_path(csv_file: str, bibtex_path: str) -> str | None:
+    """Read BibTeX content from a relative or absolute file path."""
+    if not bibtex_path or bibtex_path.lower() == "nan":
+        return None
+
+    candidate = Path(bibtex_path)
+    if not candidate.is_absolute():
+        candidate = Path(csv_file).resolve().parent / candidate
+
+    if not candidate.exists():
+        return None
+
+    content = candidate.read_text(encoding="utf-8").strip()
+    if content.startswith("@"):
+        return content
+
+    return None

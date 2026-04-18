@@ -123,6 +123,8 @@ class TestAddReference:
             "Link",
             "Category",
             "ArxivID",
+            "BibTeX",
+            "BibTeXPath",
         ]
         assert list(df.columns) == expected_headers
 
@@ -277,6 +279,8 @@ class TestLoadReferences:
             "Link",
             "Category",
             "ArxivID",
+            "BibTeX",
+            "BibTeXPath",
         ]
         assert Path(temp_csv).exists()
 
@@ -378,3 +382,32 @@ class TestArxivIdColumn:
         assert len(df) == 1
         # Check for empty string or NaN (which can happen in CSV round-trip)
         assert df.iloc[0]["ArxivID"] == "" or pd.isna(df.iloc[0]["ArxivID"])
+
+
+class TestBibtexColumn:
+    """Test BibTeX column storage."""
+
+    def test_add_reference_with_bibtex(self, temp_csv):
+        """Test that BibTeX is stored in a file and path is saved."""
+        bibtex = "@article{test2026, title={Test Entry}}"
+        storage.add_reference(
+            title="BibTeX Paper",
+            authors="BibTeX Author",
+            journal="Journal",
+            year=2026,
+            doi="10.1234/bibtex.2026",
+            link="https://example.com/bibtex",
+            category="Testing",
+            bibtex=bibtex,
+            file_path=temp_csv,
+        )
+
+        df = pd.read_csv(temp_csv)
+        assert len(df) == 1
+        assert df.iloc[0]["BibTeX"] == "" or pd.isna(df.iloc[0]["BibTeX"])
+        bib_path = df.iloc[0]["BibTeXPath"]
+        assert bib_path.endswith(".bib")
+
+        resolved = Path(temp_csv).parent / bib_path
+        assert resolved.exists()
+        assert resolved.read_text(encoding="utf-8").strip() == bibtex

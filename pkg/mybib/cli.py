@@ -5,6 +5,7 @@ import sys
 
 from .arxiv import fetch_arxiv_metadata
 from .bibtex import generate_bibtex
+from .citation import fetch_arxiv_bibtex, fetch_bibtex_for_row, fetch_repo_bibtex
 from .categories import (
     get_or_create_category,
     list_categories,
@@ -15,7 +16,7 @@ from .graph import build_citation_graph, export_graph_html
 from .markdown import make_markdown_table, make_markdown_tables_by_category
 from .repo import fetch_repo_metadata
 from .scholar import search_and_confirm_article
-from .storage import add_reference, load_references
+from .storage import add_reference, load_references, store_bibtex_for_existing_row
 from .ui import (
     api_progress,
     confirm_action,
@@ -86,6 +87,10 @@ def handle_add_arxiv(args) -> None:
     with api_progress():
         metadata = fetch_arxiv_metadata(arxiv_id)
 
+    print_info("Fetching citation BibTeX (if available)...")
+    with api_progress():
+        citation_bibtex = fetch_arxiv_bibtex(arxiv_id)
+
     # Get category using new category system
     category = prompt_for_category(metadata["title"], args.category)
     if category is None:
@@ -124,6 +129,8 @@ def handle_add_arxiv(args) -> None:
         link=metadata["link"],
         category=category,
         arxiv_id=metadata.get("arxiv_id"),
+        bibtex=citation_bibtex,
+        bibtex_dir=args.bibtex_dir,
         file_path=args.file,
     )
     print_success(f"Added: {metadata['title']}")
@@ -202,6 +209,10 @@ def handle_add_repo(args) -> None:
     with api_progress():
         metadata = fetch_repo_metadata(args.repo_url)
 
+    print_info("Fetching citation BibTeX from repository README (if available)...")
+    with api_progress():
+        citation_bibtex = fetch_repo_bibtex(args.repo_url)
+
     # Get category using new category system
     category = prompt_for_category(metadata["title"], args.category)
 
@@ -233,6 +244,8 @@ def handle_add_repo(args) -> None:
         doi=metadata["doi"],
         link=metadata["link"],
         category=category,
+        bibtex=citation_bibtex,
+        bibtex_dir=args.bibtex_dir,
         file_path=args.file,
     )
     print_success(f"Added: {metadata['title']}")
@@ -343,7 +356,7 @@ def handle_bibtex(args) -> None:
     """
     print_info("Generating BibTeX...")
     df = load_references(args.file)
-    bibtex_content = generate_bibtex(df)
+    bibtex_content = generate_bibtex(df, csv_file=args.file)
 
     if args.output:
         with open(args.output, "w") as f:
@@ -351,6 +364,77 @@ def handle_bibtex(args) -> None:
         print_success(f"BibTeX written to {args.output}")
     else:
         console.print(bibtex_content)
+
+
+def handle_sync_bibtex(args) -> None:
+    """Backfill missing BibTeX entries for existing references in CSV.
+
+    Args:
+        args: Parsed command-line arguments
+    """
+    print_info(f"Loading references from {args.file}...")
+    df = load_references(args.file)
+
+    if df.empty:
+        print_warning("No references found to process.")
+        return
+
+    updated = 0
+    skipped = 0
+    failed = 0
+
+    for index, row in df.iterrows():
+        current_bibtex = str(row.get("BibTeX", "")).strip()
+        current_bibtex_path = str(row.get("BibTeXPath", "")).strip()
+
+        if current_bibtex and current_bibtex.lower() != "nan":
+            stored_path = store_bibtex_for_existing_row(
+                bibtex=current_bibtex,
+                doi=row.get("DOI"),
+                title=row.get("Title"),
+                csv_file_path=args.file,
+                bibtex_dir=args.bibtex_dir,
+            )
+            if stored_path:
+                df.at[index, "BibTeXPath"] = stored_path
+                if not args.keep_inline:
+                    df.at[index, "BibTeX"] = ""
+                updated += 1
+                continue
+
+        if current_bibtex_path and not args.force:
+            skipped += 1
+            continue
+
+        bibtex = fetch_bibtex_for_row(
+            arxiv_id=row.get("ArxivID"),
+            link=row.get("Link"),
+            doi=row.get("DOI"),
+        )
+
+        if bibtex:
+            stored_path = store_bibtex_for_existing_row(
+                bibtex=bibtex,
+                doi=row.get("DOI"),
+                title=row.get("Title"),
+                csv_file_path=args.file,
+                bibtex_dir=args.bibtex_dir,
+            )
+            if stored_path:
+                df.at[index, "BibTeXPath"] = stored_path
+                if not args.keep_inline:
+                    df.at[index, "BibTeX"] = ""
+            elif args.keep_inline:
+                df.at[index, "BibTeX"] = bibtex
+            updated += 1
+        else:
+            failed += 1
+
+    df.to_csv(args.file, index=False)
+
+    print_success(
+        f"BibTeX sync complete: updated={updated}, skipped={skipped}, not_found={failed}"
+    )
 
 
 def handle_graph(args) -> None:
@@ -447,6 +531,7 @@ def main() -> None:
 Examples:
   mybib add-arxiv https://arxiv.org/abs/2301.00001 --category ML
     mybib add-repo https://github.com/owner/repo --category Tools
+    mybib sync-bibtex --file references.csv
   mybib add --title "My Paper" --authors "Author Name" --journal "Nature" \
     --year 2024 --doi "10.xxxx/xxxxx" --category Science
   mybib markdown --file references.csv --output README.md
@@ -470,6 +555,11 @@ Examples:
         default="references.csv",
         help="CSV file path (default: references.csv)",
     )
+    add_arxiv_parser.add_argument(
+        "--bibtex-dir",
+        default="bibtex_entries",
+        help="Directory for BibTeX files (default: bibtex_entries)",
+    )
     add_arxiv_parser.set_defaults(func=handle_add_arxiv)
 
     # add-repo command
@@ -488,6 +578,11 @@ Examples:
         "--file",
         default="references.csv",
         help="CSV file path (default: references.csv)",
+    )
+    add_repo_parser.add_argument(
+        "--bibtex-dir",
+        default="bibtex_entries",
+        help="Directory for BibTeX files (default: bibtex_entries)",
     )
     add_repo_parser.set_defaults(func=handle_add_repo)
 
@@ -551,6 +646,33 @@ Examples:
     )
     bibtex_parser.add_argument("--output", help="Output file (e.g., references.bib)")
     bibtex_parser.set_defaults(func=handle_bibtex)
+
+    # sync-bibtex command
+    sync_bibtex_parser = subparsers.add_parser(
+        "sync-bibtex",
+        help="Fetch and store BibTeX citations for existing references",
+    )
+    sync_bibtex_parser.add_argument(
+        "--file",
+        default="references.csv",
+        help="CSV file path (default: references.csv)",
+    )
+    sync_bibtex_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-fetch BibTeX even when BibTeX is already stored",
+    )
+    sync_bibtex_parser.add_argument(
+        "--bibtex-dir",
+        default="bibtex_entries",
+        help="Directory for BibTeX files (default: bibtex_entries)",
+    )
+    sync_bibtex_parser.add_argument(
+        "--keep-inline",
+        action="store_true",
+        help="Keep inline BibTeX text in CSV after storing file paths",
+    )
+    sync_bibtex_parser.set_defaults(func=handle_sync_bibtex)
 
     # graph command
     graph_parser = subparsers.add_parser(
